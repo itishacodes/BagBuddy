@@ -1,6 +1,6 @@
 # BagBuddy  
 
-> **Pack Smart, Unpack Easy**  
+> **Say goodbye to packing panic**  
 
 A sleek web app to help you stay organized while packing for trips, moving houses, or preparing for events.  
 BagBuddy is simple, efficient, and fun to use.  
