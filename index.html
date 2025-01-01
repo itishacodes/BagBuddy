@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📦 BagBuddy</title>
+    <script src="https://unpkg.com/vue@3.2.47/dist/vue.global.prod.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <div id="app" class="min-h-screen p-4 md:p-8">
+        <div class="max-w-md mx-auto bg-pink-100 p-6 neu-brutal rounded-lg">
+            <div class="flex justify-between items-center mb-4">
+                <h1 class="text-3xl font-bold flex items-center gap-2">
+                    📦 BagBuddy
+                </h1>
+            </div>
+
+            <div v-if="!loggedIn" class="mb-6">
+                <input v-model="username" type="text" placeholder="Enter your username" 
+                       class="w-full p-2 neu-brutal rounded mb-2" required>
+                <button @click="login" 
+                        class="w-full p-2 bg-blue-400 neu-brutal rounded font-bold hover:bg-blue-500 transition">
+                    Log In
+                </button>
+            </div>
+
+            <div v-else>
+                <div class="mb-6">
+                    <input v-model="listName" type="text" placeholder="Name your list" 
+                           class="w-full p-2 neu-brutal rounded mb-4" required>
+                </div>
+
+                <div v-if="listName" class="mb-4">
+                    <h2 class="text-xl font-semibold">{{ listName }}</h2>
+                </div>
+
+                <div class="flex gap-4 mb-6">
+                    <button @click="mode = 'pack'" 
+                            :class="{'bg-green-400': mode === 'pack', 'bg-gray-200': mode !== 'pack'}"
+                            class="flex-1 py-2 neu-brutal rounded font-bold transition">
+                        Pack
+                    </button>
+                    <button @click="mode = 'unpack'"
+                            :class="{'bg-red-400': mode === 'unpack', 'bg-gray-200': mode !== 'unpack'}"
+                            class="flex-1 py-2 neu-brutal rounded font-bold transition">
+                        Unpack
+                    </button>
+                </div>
+
+                <form @submit.prevent="addItem" class="space-y-4 mb-6">
+                    <input v-model="newItem.name" type="text" placeholder="Item Name" 
+                           class="w-full p-2 neu-brutal rounded" required>
+                    <input v-model="newItem.quantity" type="number" placeholder="Quantity" 
+                           class="w-full p-2 neu-brutal rounded" required>
+                    <input v-model="newItem.location" type="text" placeholder="Storage Location" 
+                           class="w-full p-2 neu-brutal rounded" required>
+                    <input v-model="newItem.date" type="date" 
+                           class="w-full p-2 neu-brutal rounded" required>
+                    <button type="submit" 
+                            class="w-full p-2 bg-blue-400 neu-brutal rounded font-bold hover:bg-blue-500 transition">
+                        Add Item
+                    </button>
+                </form>
+
+                <div class="space-y-4">
+                    <div>
+                        <input v-model="filterLocation" type="text" placeholder="Filter by location" 
+                               class="w-full p-2 neu-brutal rounded mb-4">
+                    </div>
+                    <div>
+                        <input v-model="filterDate" type="date" placeholder="Filter by date" 
+                               class="w-full p-2 neu-brutal rounded mb-4">
+                    </div>
+                    <div class="bg-green-200 p-4 neu-brutal rounded">
+                        <h2 class="font-bold mb-2">Packed Items</h2>
+                        <div class="list-container">
+                            <div v-for="item in filteredPackedItems" :key="item.id" 
+                                 class="bg-white p-2 mb-2 neu-brutal rounded flex justify-between items-center">
+                                <div>
+                                    <span class="font-bold">{{item.name}}</span> 
+                                    ({{item.quantity}}) - {{item.location}}
+                                    <div class="text-sm text-gray-600">{{formatDate(item.date)}}</div>
+                                </div>
+                                <div class="flex gap-2">
+                                    <button @click="moveItem(item, 'unpack')" 
+                                            class="bg-red-400 p-1 neu-brutal rounded">
+                                        <i class="bi bi-box-arrow-up"></i>
+                                    </button>
+                                    <button @click="deleteItem(item, 'pack')" 
+                                            class="bg-gray-400 p-1 neu-brutal rounded">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-red-200 p-4 neu-brutal rounded">
+                        <h2 class="font-bold mb-2">Unpacked Items</h2>
+                        <div class="list-container">
+                            <div v-for="item in filteredUnpackedItems" :key="item.id" 
+                                 class="bg-white p-2 mb-2 neu-brutal rounded flex justify-between items-center">
+                                <div>
+                                    <span class="font-bold">{{item.name}}</span> 
+                                    ({{item.quantity}}) - {{item.location}}
+                                    <div class="text-sm text-gray-600">{{formatDate(item.date)}}</div>
+                                </div>
+                                <div class="flex gap-2">
+                                    <button @click="moveItem(item, 'pack')" 
+                                            class="bg-green-400 p-1 neu-brutal rounded">
+                                        <i class="bi bi-box-arrow-down"></i>
+                                    </button>
+                                    <button @click="deleteItem(item, 'unpack')" 
+                                            class="bg-gray-400 p-1 neu-brutal rounded">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-4 flex justify-between">
+                    <button @click="downloadList" 
+                            class="p-2 bg-blue-400 neu-brutal rounded font-bold hover:bg-blue-500 transition">
+                        Download List
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
