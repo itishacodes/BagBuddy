@@ -1,40 +1,13 @@
+[v-cloak] {
+    display: none !important;
+}
+
 body {
-    background-color: #fffbeb;
-    font-family: 'Space Grotesk', sans-serif;
+    background-image: radial-gradient(#1a1a1a 1px, transparent 0);
+    background-size: 24px 24px;
 }
 
-.neu-brutal {
-    border: 3px solid #000000;
-    box-shadow: 4px 4px 0px 0px #000000;
-    transition: all 0.2s ease;
-}
-
-.neu-brutal:focus {
-    outline: none;
-    box-shadow: 2px 2px 0px 0px #000000;
-    transform: translate(2px, 2px);
-}
-
-button.neu-brutal:active {
-    box-shadow: 1px 1px 0px 0px #000000;
-    transform: translate(3px, 3px);
-}
-
-.list-container {
-    max-height: 300px;
-    overflow-y: auto;
-    padding-right: 4px;
-}
-
-.list-container::-webkit-scrollbar {
-    width: 6px;
-}
-
-.list-container::-webkit-scrollbar-track {
-    background: transparent;
-}
-
-.list-container::-webkit-scrollbar-thumb {
-    background: #000000;
-    border-radius: 3px;
+input[type="date"]::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+    filter: invert(0);
 }
