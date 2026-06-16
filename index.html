@@ -7,6 +7,7 @@
     <title>📦 BagBuddy</title>
     <script src="https://unpkg.com/vue@3.2.47/dist/vue.global.prod.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
@@ -15,6 +16,7 @@
 <body>
     <div id="app" class="min-h-screen p-4 md:p-8">
         <div class="max-w-md mx-auto bg-pink-100 p-6 neu-brutal rounded-lg">
+
             <div class="flex justify-between items-center mb-4">
                 <h1 class="text-3xl font-bold flex items-center gap-2">
                     📦 BagBuddy
@@ -32,7 +34,7 @@
 
             <div v-else>
                 <div class="mb-6">
-                    <input v-model="listName" type="text" placeholder="Name your list" 
+                    <input v-model="listName" @input="saveData" type="text" placeholder="Name your list" 
                            class="w-full p-2 neu-brutal rounded mb-4" required>
                 </div>
 
@@ -56,8 +58,21 @@
                 <form @submit.prevent="addItem" class="space-y-4 mb-6">
                     <input v-model="newItem.name" type="text" placeholder="Item Name" 
                            class="w-full p-2 neu-brutal rounded" required>
-                    <input v-model="newItem.quantity" type="number" placeholder="Quantity" 
-                           class="w-full p-2 neu-brutal rounded" required>
+                    
+                    <div class="grid grid-cols-2 gap-2">
+                        <input v-model="newItem.quantity" type="number" placeholder="Quantity" 
+                               class="w-full p-2 neu-brutal rounded" required>
+                        
+                        <select v-model="newItem.category" class="w-full p-2 neu-brutal rounded font-bold bg-white" required>
+                            <option value="" disabled selected>Category</option>
+                            <option value="clothing">👕 Clothing</option>
+                            <option value="electronics">🔌 Electronics</option>
+                            <option value="food">🍏 Food</option>
+                            <option value="documents">📄 Docs</option>
+                            <option value="other">📦 Other</option>
+                        </select>
+                    </div>
+
                     <input v-model="newItem.location" type="text" placeholder="Storage Location" 
                            class="w-full p-2 neu-brutal rounded" required>
                     <input v-model="newItem.date" type="date" 
@@ -69,31 +84,34 @@
                 </form>
 
                 <div class="space-y-4">
-                    <div>
+                    <div class="grid grid-cols-2 gap-2">
                         <input v-model="filterLocation" type="text" placeholder="Filter by location" 
-                               class="w-full p-2 neu-brutal rounded mb-4">
+                               class="w-full p-2 neu-brutal rounded mb-4 text-sm">
+                        <input v-model="filterDate" type="date" 
+                               class="w-full p-2 neu-brutal rounded mb-4 text-sm">
                     </div>
-                    <div>
-                        <input v-model="filterDate" type="date" placeholder="Filter by date" 
-                               class="w-full p-2 neu-brutal rounded mb-4">
-                    </div>
+                    
+                    <!-- Packed Items List -->
                     <div class="bg-green-200 p-4 neu-brutal rounded">
-                        <h2 class="font-bold mb-2">Packed Items</h2>
+                        <h2 class="font-bold mb-2 flex justify-between">
+                            <span>Packed Items</span>
+                            <span class="text-sm bg-black text-white px-2 rounded-full">{{ filteredPackedItems.length }}</span>
+                        </h2>
                         <div class="list-container">
                             <div v-for="item in filteredPackedItems" :key="item.id" 
-                                 class="bg-white p-2 mb-2 neu-brutal rounded flex justify-between items-center">
-                                <div>
-                                    <span class="font-bold">{{item.name}}</span> 
-                                    ({{item.quantity}}) - {{item.location}}
-                                    <div class="text-sm text-gray-600">{{formatDate(item.date)}}</div>
+                                 class="bg-white p-2 mb-2 neu-brutal rounded flex justify-between items-center relative overflow-hidden">
+                                <div :class="getCategoryColor(item.category)" class="absolute top-0 left-0 bottom-0 w-2"></div>
+                                
+                                <div class="pl-3">
+                                    <span class="font-bold line-through text-gray-500">{{item.name}}</span> 
+                                    <span class="text-xs font-bold ml-1 px-1 bg-gray-100 border border-black rounded">{{item.quantity}}</span>
+                                    <div class="text-xs text-gray-600 mt-1">📍 {{item.location}} | 📅 {{formatDate(item.date)}}</div>
                                 </div>
-                                <div class="flex gap-2">
-                                    <button @click="moveItem(item, 'unpack')" 
-                                            class="bg-red-400 p-1 neu-brutal rounded">
+                                <div class="flex gap-1 z-10">
+                                    <button @click="moveItem(item, 'unpack')" class="bg-red-400 p-1 text-xs neu-brutal rounded">
                                         <i class="bi bi-box-arrow-up"></i>
                                     </button>
-                                    <button @click="deleteItem(item, 'pack')" 
-                                            class="bg-gray-400 p-1 neu-brutal rounded">
+                                    <button @click="deleteItem(item, 'pack')" class="bg-gray-400 p-1 text-xs neu-brutal rounded">
                                         <i class="bi bi-trash"></i>
                                     </button>
                                 </div>
@@ -101,23 +119,27 @@
                         </div>
                     </div>
 
+                    <!-- Unpacked Items List -->
                     <div class="bg-red-200 p-4 neu-brutal rounded">
-                        <h2 class="font-bold mb-2">Unpacked Items</h2>
+                        <h2 class="font-bold mb-2 flex justify-between">
+                            <span>Unpacked Items</span>
+                            <span class="text-sm bg-black text-white px-2 rounded-full">{{ filteredUnpackedItems.length }}</span>
+                        </h2>
                         <div class="list-container">
                             <div v-for="item in filteredUnpackedItems" :key="item.id" 
-                                 class="bg-white p-2 mb-2 neu-brutal rounded flex justify-between items-center">
-                                <div>
+                                 class="bg-white p-2 mb-2 neu-brutal rounded flex justify-between items-center relative overflow-hidden">
+                                <div :class="getCategoryColor(item.category)" class="absolute top-0 left-0 bottom-0 w-2"></div>
+                                
+                                <div class="pl-3">
                                     <span class="font-bold">{{item.name}}</span> 
-                                    ({{item.quantity}}) - {{item.location}}
-                                    <div class="text-sm text-gray-600">{{formatDate(item.date)}}</div>
+                                    <span class="text-xs font-bold ml-1 px-1 bg-gray-100 border border-black rounded">{{item.quantity}}</span>
+                                    <div class="text-xs text-gray-600 mt-1">📍 {{item.location}} | 📅 {{formatDate(item.date)}}</div>
                                 </div>
-                                <div class="flex gap-2">
-                                    <button @click="moveItem(item, 'pack')" 
-                                            class="bg-green-400 p-1 neu-brutal rounded">
+                                <div class="flex gap-1 z-10">
+                                    <button @click="moveItem(item, 'pack')" class="bg-green-400 p-1 text-xs neu-brutal rounded">
                                         <i class="bi bi-box-arrow-down"></i>
                                     </button>
-                                    <button @click="deleteItem(item, 'unpack')" 
-                                            class="bg-gray-400 p-1 neu-brutal rounded">
+                                    <button @click="deleteItem(item, 'unpack')" class="bg-gray-400 p-1 text-xs neu-brutal rounded">
                                         <i class="bi bi-trash"></i>
                                     </button>
                                 </div>
@@ -128,8 +150,8 @@
 
                 <div class="mt-4 flex justify-between">
                     <button @click="downloadList" 
-                            class="p-2 bg-blue-400 neu-brutal rounded font-bold hover:bg-blue-500 transition">
-                        Download List
+                            class="p-2 bg-blue-400 neu-brutal rounded font-bold hover:bg-blue-500 transition w-full text-center">
+                        Download List 🚀
                     </button>
                 </div>
             </div>
