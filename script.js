@@ -10,6 +10,7 @@ createApp({
             newItem: {
                 name: '',
                 quantity: '',
+                category: '', 
                 location: '',
                 date: ''
             },
@@ -35,7 +36,7 @@ createApp({
     },
     methods: {
         login() {
-            if (this.username) {
+            if (this.username.trim()) {
                 this.loggedIn = true;
                 this.loadData();
             }
@@ -46,67 +47,96 @@ createApp({
                 packedItems: this.packedItems,
                 unpackedItems: this.unpackedItems
             };
-            localStorage.setItem(this.username, JSON.stringify(data));
+            localStorage.setItem(this.username.trim(), JSON.stringify(data));
         },
         loadData() {
-            const storedData = localStorage.getItem(this.username);
-            if (storedData) {
-                const data = JSON.parse(storedData);
-                this.listName = data.listName;
-                this.packedItems = data.packedItems;
-                this.unpackedItems = data.unpackedItems;
+            const savedData = localStorage.getItem(this.username.trim());
+            if (savedData) {
+                const parsed = JSON.parse(savedData);
+                this.listName = parsed.listName || '';
+                this.packedItems = parsed.packedItems || [];
+                this.unpackedItems = parsed.unpackedItems || [];
+            } else {
+                this.listName = '';
+                this.packedItems = [];
+                this.unpackedItems = [];
             }
-        },
-        formatDate(date) {
-            return new Date(date).toLocaleDateString();
         },
         addItem() {
-            const newItem = { ...this.newItem, id: Date.now() };
-            if (this.mode === 'pack') {
-                this.packedItems.push(newItem);
-            } else {
-                this.unpackedItems.push(newItem);
-            }
-            this.newItem = { name: '', quantity: '', location: '', date: '' };
+            if (!this.newItem.name.trim() || !this.newItem.category) return;
+            
+            const itemToAdd = {
+                id: Date.now(),
+                name: this.newItem.name.trim(),
+                quantity: this.newItem.quantity || 1,
+                category: this.newItem.category,
+                location: this.newItem.location.trim() || 'Main Bag',
+                date: this.newItem.date || new Date().toISOString().split('T')[0]
+            };
+
+            this.unpackedItems.push(itemToAdd);
             this.saveData();
+
+            // Clear inputs
+            this.newItem.name = '';
+            this.newItem.quantity = '';
+            this.newItem.category = '';
+            this.newItem.location = '';
+            this.newItem.date = '';
         },
-        moveItem(item, targetList) {
-            if (targetList === 'pack') {
+        toggleItem(item, fromList) {
+            if (fromList === 'unpacked') {
+                this.unpackedItems = this.unpackedItems.filter(i => i.id !== item.id);
                 this.packedItems.push(item);
-                this.unpackedItems = this.unpackedItems.filter(i => i.id !== item.id);
             } else {
+                this.packedItems = this.packedItems.filter(i => i.id !== item.id);
                 this.unpackedItems.push(item);
-                this.packedItems = this.packedItems.filter(i => i.id !== item.id);
             }
             this.saveData();
         },
-        deleteItem(item, list) {
-            if (list === 'pack') {
-                this.packedItems = this.packedItems.filter(i => i.id !== item.id);
-            } else {
+        removeItem(item, fromList) {
+            if (fromList === 'unpacked') {
                 this.unpackedItems = this.unpackedItems.filter(i => i.id !== item.id);
+            } else {
+                this.packedItems = this.packedItems.filter(i => i.id !== item.id);
             }
             this.saveData();
         },
-        downloadList() {
-            const allItems = [...this.packedItems, ...this.unpackedItems];
-            const headers = ["Name", "Quantity", "Location", "Date"];
-            const rows = allItems.map(item => [
-                `"${item.name}"`,
-                item.quantity,
-                `"${item.location}"`,
-                `"${item.date}"`
-            ]);
+        logout() {
+            this.loggedIn = false;
+            this.username = '';
+            this.listName = '';
+            this.packedItems = [];
+            this.unpackedItems = [];
+        },
+        downloadCSV() {
+            let csvContent = "data:text/csv;charset=utf-8,";
+            csvContent += "Item Name,Quantity,Category,Storage Location,Target Date,Status\n";
 
-            const csvContent = [headers, ...rows]
-                .map(row => row.join(","))
-                .join("\n");
+            this.unpackedItems.forEach(item => {
+                csvContent += `"${item.name}","${item.quantity}","${item.category}","${item.location}","${item.date}","Unpacked"\n`;
+            });
 
-            const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+            this.packedItems.forEach(item => {
+                csvContent += `"${item.name}","${item.quantity}","${item.category}","${item.location}","${item.date}","Packed"\n`;
+            });
+
+            const encodedUri = encodeURI(csvContent);
             const link = document.createElement("a");
-            link.href = URL.createObjectURL(blob);
-            link.download = `${this.listName || "bagBuddy"}-list.csv`;
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `${this.listName || 'Packing_List'}.csv`);
+            document.body.appendChild(link);
             link.click();
+            document.body.removeChild(link);
+
+            // Confetti Trigger
+            if (typeof confetti !== 'undefined') {
+                confetti({
+                    particleCount: 150,
+                    spread: 80,
+                    origin: { y: 0.6 }
+                });
+            }
         }
     }
 }).mount('#app');
