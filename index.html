@@ -1,164 +1,212 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>📦 BagBuddy</title>
-    <script src="https://unpkg.com/vue@3.2.47/dist/vue.global.prod.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;700&display=swap" rel="stylesheet">
+    <title>BagBuddy - Smart Packing List</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <!-- Canvas Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
     <link rel="stylesheet" href="styles.css">
 </head>
+<body class="bg-[#f0eae1] font-mono text-[#1a1a1a] p-4 md:p-8 min-h-screen">
 
-<body>
-    <div id="app" class="min-h-screen p-4 md:p-8">
-        <div class="max-w-md mx-auto bg-pink-100 p-6 neu-brutal rounded-lg">
-
-            <div class="flex justify-between items-center mb-4">
-                <h1 class="text-3xl font-bold flex items-center gap-2">
-                    📦 BagBuddy
-                </h1>
-            </div>
-
-            <div v-if="!loggedIn" class="mb-6">
-                <input v-model="username" type="text" placeholder="Enter your username" 
-                       class="w-full p-2 neu-brutal rounded mb-2" required>
-                <button @click="login" 
-                        class="w-full p-2 bg-blue-400 neu-brutal rounded font-bold hover:bg-blue-500 transition">
-                    Log In
+    <div id="app" class="max-w-4xl mx-auto" v-cloak>
+        
+        <!-- Header Title (Neo-Brutalist Banner) -->
+        <header class="bg-[#ffd700] border-4 border-black p-6 rounded-none shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] mb-10 text-center relative overflow-hidden">
+            <h1 class="text-4xl md:text-6xl font-black tracking-tight uppercase">🎒 BagBuddy</h1>
+            <p class="text-sm md:text-lg font-bold mt-2 tracking-wide text-black/80">Your Ultimate Anti-Forget Packing Companion</p>
+            <div v-if="loggedIn" class="absolute top-4 right-4">
+                <button @click="logout" class="bg-[#ff6b6b] border-2 border-black px-3 py-1 text-xs font-bold uppercase hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all cursor-pointer">
+                    Logout <i class="bi bi-box-arrow-right"></i>
                 </button>
             </div>
+        </header>
 
-            <div v-else>
-                <div class="mb-6">
-                    <input v-model="listName" @input="saveData" type="text" placeholder="Name your list" 
-                           class="w-full p-2 neu-brutal rounded mb-4" required>
+        <!-- 1. Authentication View -->
+        <div v-if="!loggedIn" class="max-w-md mx-auto bg-white border-4 border-black p-8 rounded-none shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
+            <h2 class="text-2xl font-black uppercase mb-6 border-b-4 border-black pb-2 text-center">🔐 Access Your Bags</h2>
+            <form @submit.prevent="login" class="space-y-6">
+                <div>
+                    <label class="block text-sm font-black uppercase mb-2">Who's Packing? (Username)</label>
+                    <input type="text" v-model="username" placeholder="e.g., itishacodes" required
+                        class="w-full bg-[#f9f9f9] border-4 border-black p-3 font-bold placeholder-black/40 outline-none focus:bg-white focus:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all">
                 </div>
+                <button type="submit" class="w-full bg-[#38b2ac] text-white font-black text-lg uppercase border-4 border-black py-3 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-x-[4px] active:translate-y-[4px] active:shadow-none transition-all cursor-pointer">
+                    Enter Dashboard <i class="bi bi-arrow-right-short"></i>
+                </button>
+            </form>
+        </div>
 
-                <div v-if="listName" class="mb-4">
-                    <h2 class="text-xl font-semibold">{{ listName }}</h2>
+        <!-- 2. Main Dashboard View -->
+        <div v-else class="space-y-8">
+            
+            <!-- Trip Header & Meta Configuration -->
+            <div class="bg-[#a3e635] border-4 border-black p-6 rounded-none shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] flex flex-col md:flex-row gap-4 justify-between items-center">
+                <div class="w-full md:w-1/2">
+                    <label class="block text-xs font-black uppercase mb-1">Trip / Event Name:</label>
+                    <input type="text" v-model="listName" @input="saveData" placeholder="Give your expedition a title..."
+                        class="w-full bg-white/80 border-2 border-black p-2 font-bold placeholder-black/40 text-xl outline-none focus:bg-white">
                 </div>
-
-                <div class="flex gap-4 mb-6">
-                    <button @click="mode = 'pack'" 
-                            :class="{'bg-green-400': mode === 'pack', 'bg-gray-200': mode !== 'pack'}"
-                            class="flex-1 py-2 neu-brutal rounded font-bold transition">
-                        Pack
-                    </button>
-                    <button @click="mode = 'unpack'"
-                            :class="{'bg-red-400': mode === 'unpack', 'bg-gray-200': mode !== 'unpack'}"
-                            class="flex-1 py-2 neu-brutal rounded font-bold transition">
-                        Unpack
-                    </button>
-                </div>
-
-                <form @submit.prevent="addItem" class="space-y-4 mb-6">
-                    <input v-model="newItem.name" type="text" placeholder="Item Name" 
-                           class="w-full p-2 neu-brutal rounded" required>
-                    
-                    <div class="grid grid-cols-2 gap-2">
-                        <input v-model="newItem.quantity" type="number" placeholder="Quantity" 
-                               class="w-full p-2 neu-brutal rounded" required>
-                        
-                        <select v-model="newItem.category" class="w-full p-2 neu-brutal rounded font-bold bg-white" required>
-                            <option value="" disabled selected>Category</option>
-                            <option value="clothing">👕 Clothing</option>
-                            <option value="electronics">🔌 Electronics</option>
-                            <option value="food">🍏 Food</option>
-                            <option value="documents">📄 Docs</option>
-                            <option value="other">📦 Other</option>
-                        </select>
-                    </div>
-
-                    <input v-model="newItem.location" type="text" placeholder="Storage Location" 
-                           class="w-full p-2 neu-brutal rounded" required>
-                    <input v-model="newItem.date" type="date" 
-                           class="w-full p-2 neu-brutal rounded" required>
-                    <button type="submit" 
-                            class="w-full p-2 bg-blue-400 neu-brutal rounded font-bold hover:bg-blue-500 transition">
-                        Add Item
-                    </button>
-                </form>
-
-                <div class="space-y-4">
-                    <div class="grid grid-cols-2 gap-2">
-                        <input v-model="filterLocation" type="text" placeholder="Filter by location" 
-                               class="w-full p-2 neu-brutal rounded mb-4 text-sm">
-                        <input v-model="filterDate" type="date" 
-                               class="w-full p-2 neu-brutal rounded mb-4 text-sm">
-                    </div>
-                    
-                    <!-- Packed Items List -->
-                    <div class="bg-green-200 p-4 neu-brutal rounded">
-                        <h2 class="font-bold mb-2 flex justify-between">
-                            <span>Packed Items</span>
-                            <span class="text-sm bg-black text-white px-2 rounded-full">{{ filteredPackedItems.length }}</span>
-                        </h2>
-                        <div class="list-container">
-                            <div v-for="item in filteredPackedItems" :key="item.id" 
-                                 class="bg-white p-2 mb-2 neu-brutal rounded flex justify-between items-center relative overflow-hidden">
-                                <div :class="getCategoryColor(item.category)" class="absolute top-0 left-0 bottom-0 w-2"></div>
-                                
-                                <div class="pl-3">
-                                    <span class="font-bold line-through text-gray-500">{{item.name}}</span> 
-                                    <span class="text-xs font-bold ml-1 px-1 bg-gray-100 border border-black rounded">{{item.quantity}}</span>
-                                    <div class="text-xs text-gray-600 mt-1">📍 {{item.location}} | 📅 {{formatDate(item.date)}}</div>
-                                </div>
-                                <div class="flex gap-1 z-10">
-                                    <button @click="moveItem(item, 'unpack')" class="bg-red-400 p-1 text-xs neu-brutal rounded">
-                                        <i class="bi bi-box-arrow-up"></i>
-                                    </button>
-                                    <button @click="deleteItem(item, 'pack')" class="bg-gray-400 p-1 text-xs neu-brutal rounded">
-                                        <i class="bi bi-trash"></i>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Unpacked Items List -->
-                    <div class="bg-red-200 p-4 neu-brutal rounded">
-                        <h2 class="font-bold mb-2 flex justify-between">
-                            <span>Unpacked Items</span>
-                            <span class="text-sm bg-black text-white px-2 rounded-full">{{ filteredUnpackedItems.length }}</span>
-                        </h2>
-                        <div class="list-container">
-                            <div v-for="item in filteredUnpackedItems" :key="item.id" 
-                                 class="bg-white p-2 mb-2 neu-brutal rounded flex justify-between items-center relative overflow-hidden">
-                                <div :class="getCategoryColor(item.category)" class="absolute top-0 left-0 bottom-0 w-2"></div>
-                                
-                                <div class="pl-3">
-                                    <span class="font-bold">{{item.name}}</span> 
-                                    <span class="text-xs font-bold ml-1 px-1 bg-gray-100 border border-black rounded">{{item.quantity}}</span>
-                                    <div class="text-xs text-gray-600 mt-1">📍 {{item.location}} | 📅 {{formatDate(item.date)}}</div>
-                                </div>
-                                <div class="flex gap-1 z-10">
-                                    <button @click="moveItem(item, 'pack')" class="bg-green-400 p-1 text-xs neu-brutal rounded">
-                                        <i class="bi bi-box-arrow-down"></i>
-                                    </button>
-                                    <button @click="deleteItem(item, 'unpack')" class="bg-gray-400 p-1 text-xs neu-brutal rounded">
-                                        <i class="bi bi-trash"></i>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="mt-4 flex justify-between">
-                    <button @click="downloadList" 
-                            class="p-2 bg-blue-400 neu-brutal rounded font-bold hover:bg-blue-500 transition w-full text-center">
-                        Download List 🚀
+                <div class="flex flex-wrap gap-3 w-full md:w-auto justify-end">
+                    <button @click="downloadCSV" class="bg-white border-2 border-black px-4 py-2 font-black uppercase text-sm flex items-center gap-2 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all cursor-pointer">
+                        <i class="bi bi-download"></i> Export List (.CSV)
                     </button>
                 </div>
             </div>
+
+            <!-- Double Column Form + Filters Workspace -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                
+                <!-- Input Control Panel -->
+                <div class="bg-white border-4 border-black p-6 rounded-none shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] lg:col-span-1 self-start">
+                    <h3 class="text-xl font-black uppercase mb-4 border-b-2 border-black pb-1">➕ Add Item</h3>
+                    <form @submit.prevent="addItem" class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-black uppercase mb-1">Item Name *</label>
+                            <input type="text" v-model="newItem.name" placeholder="e.g., Passport, Chargers" required
+                                class="w-full bg-[#f9f9f9] border-2 border-black p-2 font-bold outline-none focus:bg-white">
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-xs font-black uppercase mb-1">Quantity</label>
+                                <input type="number" v-model.number="newItem.quantity" placeholder="1" min="1"
+                                    class="w-full bg-[#f9f9f9] border-2 border-black p-2 font-bold outline-none focus:bg-white">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-black uppercase mb-1">Category *</label>
+                                <select v-model="newItem.category" required class="w-full bg-[#f9f9f9] border-2 border-black p-2 font-bold outline-none focus:bg-white">
+                                    <option value="" disabled selected>Select...</option>
+                                    <option value="Clothing">👕 Clothing</option>
+                                    <option value="Electronics">🔌 Electronics</option>
+                                    <option value="Documents">📄 Documents</option>
+                                    <option value="Toiletries">🧴 Toiletries</option>
+                                    <option value="Food">🍎 Food/Snacks</option>
+                                    <option value="Other">📦 Other</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-black uppercase mb-1">Storage Location</label>
+                            <input type="text" v-model="newItem.location" placeholder="e.g., Backpack, Checked Bag"
+                                class="w-full bg-[#f9f9f9] border-2 border-black p-2 font-bold outline-none focus:bg-white">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-black uppercase mb-1">Target Date</label>
+                            <input type="date" v-model="newItem.date"
+                                class="w-full bg-[#f9f9f9] border-2 border-black p-2 font-bold outline-none focus:bg-white">
+                        </div>
+                        <button type="submit" class="w-full bg-[#ffd700] border-2 border-black py-2 font-black uppercase text-sm tracking-wider shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all cursor-pointer">
+                            Throw In Bag <i class="bi bi-plus-lg"></i>
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Live Dynamic Tracking Lists -->
+                <div class="lg:col-span-2 space-y-6">
+                    
+                    <!-- Realtime Search Filters -->
+                    <div class="bg-[#bfdbfe] border-4 border-black p-4 rounded-none shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] flex flex-col sm:flex-row gap-4">
+                        <div class="flex-1">
+                            <input type="text" v-model="filterLocation" placeholder="🔍 Filter by baggage location..."
+                                class="w-full bg-white border-2 border-black p-2 text-xs font-bold outline-none">
+                        </div>
+                        <div class="flex-1">
+                            <input type="date" v-model="filterDate"
+                                class="w-full bg-white border-2 border-black p-2 text-xs font-bold outline-none">
+                        </div>
+                    </div>
+
+                    <!-- Navigation Tab Buttons -->
+                    <div class="flex border-4 border-black overflow-hidden bg-black gap-1 p-1 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
+                        <button @click="mode = 'pack'" :class="mode === 'pack' ? 'bg-[#ff6b6b] text-white' : 'bg-white text-black'" class="flex-1 text-center py-3 font-black uppercase text-sm tracking-wider transition-all cursor-pointer">
+                            📥 Unpacked Items ({{ filteredUnpackedItems.length }})
+                        </button>
+                        <button @click="mode = 'packed'" :class="mode === 'packed' ? 'bg-[#38b2ac] text-white' : 'bg-white text-black'" class="flex-1 text-center py-3 font-black uppercase text-sm tracking-wider transition-all cursor-pointer">
+                            ✅ Packed Items ({{ filteredPackedItems.length }})
+                        </button>
+                    </div>
+
+                    <!-- List Iterations -->
+                    <div class="space-y-3">
+                        <!-- Active Mode Content Empty State -->
+                        <div v-if="mode === 'pack' && filteredUnpackedItems.length === 0" class="text-center border-4 border-dashed border-black/40 p-8 font-bold text-black/50 bg-white/40">
+                            No remaining unpacked items matching your view! 🏕️
+                        </div>
+                        <div v-if="mode === 'packed' && filteredPackedItems.length === 0" class="text-center border-4 border-dashed border-black/40 p-8 font-bold text-black/50 bg-white/40">
+                            Nothing packed yet. Get moving! ⏱️
+                        </div>
+
+                        <!-- Unpacked Loop Iteration -->
+                        <div v-if="mode === 'pack'" v-for="item in filteredUnpackedItems" :key="item.id" 
+                            class="bg-white border-4 border-black p-4 flex justify-between items-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all">
+                            <div class="space-y-1">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-xl font-bold">{{ item.name }}</span>
+                                    <span class="bg-black text-white font-black text-xs px-2 py-0.5 rounded-none">x{{ item.quantity }}</span>
+                                    <!-- Dynamic Badge Coloring -->
+                                    <span :class="{
+                                        'bg-[#f43f5e] text-white': item.category === 'Documents',
+                                        'bg-[#3b82f6] text-white': item.category === 'Electronics',
+                                        'bg-[#10b981] text-white': item.category === 'Clothing',
+                                        'bg-[#f59e0b] text-black': item.category === 'Toiletries',
+                                        'bg-[#84cc16] text-black': item.category === 'Food',
+                                        'bg-[#6b7280] text-white': item.category === 'Other'
+                                    }" class="font-black text-[10px] uppercase px-2 py-0.5 border border-black">
+                                        {{ item.category }}
+                                    </span>
+                                </div>
+                                <div class="text-xs font-bold text-black/60">
+                                    <i class="bi bi-briefcase-fill"></i> Location: <span class="underline decoration-wavy">{{ item.location }}</span> | 📅 Date: {{ item.date }}
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <button @click="toggleItem(item, 'unpacked')" class="bg-[#38b2ac] text-white border-2 border-black p-2 font-black text-xs uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[1px] cursor-pointer">
+                                    Pack <i class="bi bi-check-lg"></i>
+                                </button>
+                                <button @click="removeItem(item, 'unpacked')" class="text-red-500 hover:text-red-700 p-1 font-bold text-sm cursor-pointer">
+                                    <i class="bi bi-trash3-fill"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Packed Loop Iteration -->
+                        <div v-if="mode === 'packed'" v-for="item in filteredPackedItems" :key="item.id" 
+                            class="bg-[#e2e8f0] opacity-85 border-4 border-black p-4 flex justify-between items-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] line-through decoration-2 decoration-black">
+                            <div>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-xl font-bold text-black/50">{{ item.name }}</span>
+                                    <span class="bg-black/30 text-white font-black text-xs px-2 py-0.5">x{{ item.quantity }}</span>
+                                    <span class="bg-black/20 text-black/60 font-black text-[10px] uppercase px-2 py-0.5 border border-dashed border-black/40">{{ item.category }}</span>
+                                </div>
+                                <div class="text-xs font-bold text-black/40">
+                                    Location: {{ item.location }} | Date: {{ item.date }}
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <button @click="toggleItem(item, 'packed')" class="bg-[#ff6b6b] text-white border-2 border-black p-2 font-black text-xs uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[1px] cursor-pointer no-underline inline-block line-none">
+                                    Unpack <i class="bi bi-arrow-counterclockwise"></i>
+                                </button>
+                                <button @click="removeItem(item, 'packed')" class="text-red-400 p-1 text-sm cursor-pointer">
+                                    <i class="bi bi-trash3-fill"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+            </div>
         </div>
+
     </div>
 
+    <!-- Core App Config Controller Scripts -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="script.js"></script>
 </body>
-
 </html>
