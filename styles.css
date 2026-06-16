@@ -1,20 +1,40 @@
 body {
+    background-color: #fffbeb;
     font-family: 'Space Grotesk', sans-serif;
-    background-color: #a8d5ff;
-    color: #000;
 }
 
 .neu-brutal {
-    box-shadow: 5px 5px 0px 0px rgba(0, 0, 0, 1);
-    border: 3px solid black;
+    border: 3px solid #000000;
+    box-shadow: 4px 4px 0px 0px #000000;
+    transition: all 0.2s ease;
 }
 
-.neu-brutal:active {
+.neu-brutal:focus {
+    outline: none;
+    box-shadow: 2px 2px 0px 0px #000000;
+    transform: translate(2px, 2px);
+}
+
+button.neu-brutal:active {
+    box-shadow: 1px 1px 0px 0px #000000;
     transform: translate(3px, 3px);
-    box-shadow: 2px 2px 0px 0px rgba(0, 0, 0, 1);
 }
 
 .list-container {
-    max-height: 200px;
+    max-height: 300px;
     overflow-y: auto;
+    padding-right: 4px;
+}
+
+.list-container::-webkit-scrollbar {
+    width: 6px;
+}
+
+.list-container::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.list-container::-webkit-scrollbar-thumb {
+    background: #000000;
+    border-radius: 3px;
 }
